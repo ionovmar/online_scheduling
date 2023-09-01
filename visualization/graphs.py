@@ -4,6 +4,7 @@
     @author: Marina Ionova, student of Cybernetics and Robotics at the CTU in Prague
     @contact: marina.ionova@cvut.cz
 """
+import pandas as pd
 from matplotlib import pyplot as plt
 import json
 import os
@@ -14,6 +15,7 @@ import pandas
 import streamlit as st
 import numpy as np
 from simulation.sim import set_task_time
+import altair as alt
 
 
 # define an object that will be used by the legend
@@ -214,26 +216,43 @@ class Vis:
             plt.show()
 
     def online_plotting(self):
-        # for i in range(1, 101):
-        new_rows = self.last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
-        self.status_text.text("%i%% Complete" % self.i)
-        self.chart.add_rows(new_rows)
-        self.progress_bar.progress(self.i)
-        self.last_rows = new_rows
-        self.i+=1
+        data = pd.DataFrame({
+            "Status": ["Completed", "In progress", "Available", "Non available", "Completed",
+                       "In progress", "Available"],
+            "Start": [0, 7, 14, 26, 0, 10, 17],
+            "End": [7, 14, 23, 30, 10, 17, 26],
+            "Agent": ["Human", "Human", "Human", "Human", "Robot", "Robot", "Robot"]
+        })
+        bar_chart = alt.Chart(data).mark_bar().encode(
+            y="Agent:N",
+            # x="sum(Time):O",
+            x=alt.X('Start:Q', title='Time'),
+            x2='End:Q',
+            color=alt.Color('Status:N', title='Status',
+                            scale=alt.Scale(
+                                domain=['Completed', 'In progress', 'Available', 'Non available'],
+                                range=['#1f77b4', '#2ca02c', '#ff7f0e', '#d62728']
+                            ))).properties(
+        title='Gantt Chart',
+        width=max(self.data['End'])
+    )
+        current_time_rule = alt.Chart(pd.DataFrame({'current_time': [self.current_time]})).mark_rule(
+            color='red').encode(
+            x='current_time',
+            size=alt.value(2)
+        )
+        self.chart_placeholder.altair_chart(bar_chart + current_time_rule, use_container_width=True)
 
-            # time.sleep(0.05)
 
     def init_online_plotting(self):
-        self.progress_bar = st.sidebar.progress(0)
-        self.status_text = st.sidebar.empty()
-        self.last_rows = np.random.randn(1, 1)
-        self.chart = st.line_chart(self.last_rows)
-        self.i = 0
-        if st.button('Say hello'):
-            st.write('Why hello there')
-        else:
-            st.write('Goodbye')
+        self.chart_placeholder = st.empty()
+        # "Energy Costs By Month"
+
+
+        # if st.button('Say hello'):
+        #     st.write('Why hello there')
+        # else:
+        #     st.write('Goodbye')
                 # progress_bar.empty()
 
         # Streamlit widgets automatically run the script from top to bottom. Since

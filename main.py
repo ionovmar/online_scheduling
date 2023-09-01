@@ -1,7 +1,7 @@
 from scheduling.scheduling_split_tasks import Schedule, schedule_as_dict
 from control.control_logic import ControlLogic
 from visualization.json_2_video import video_parser
-from visualization import schedule
+from visualization import schedule, Vis
 from control.jobs import Job
 import argparse
 import logging
@@ -15,10 +15,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("case", type=str, help='Choose one of this: 1, 2, 3, 4, 5, 6')
     parser.add_argument('--only_schedule', action=argparse.BooleanOptionalAction)
-    parser.add_argument('--animation', action=argparse.BooleanOptionalAction)
+    parser.add_argument('--offline', action=argparse.BooleanOptionalAction)
     parser.add_argument('--log_error', action=argparse.BooleanOptionalAction)
     parser.add_argument('--log_debug', action=argparse.BooleanOptionalAction)
-    parser.add_argument('--online_plot', action=argparse.BooleanOptionalAction)
 
 
     args = parser.parse_args()
@@ -40,10 +39,11 @@ if __name__ == '__main__':
 
     if not args.only_schedule:
         execute_job = ControlLogic(case)
-        execute_job.run(online_plot=True) if args.online_plot else execute_job.run(online_plot=False)
-        execute_job.run(animation=True) if args.animation else execute_job.run(animation=False)
-        if args.animation:
-            video_parser()
+        if args.offline:
+            execute_job.run()
+        else:
+            execute_job.run(online_plot=True)
+
     else:
         job = Job(case)
         schedule_model = Schedule(job)
@@ -51,5 +51,11 @@ if __name__ == '__main__':
         with open(schedule, "w") as outfile:
             json.dump(schedule_as_dict(output), outfile)
             logging.info(f'Save data to {schedule}')
+        save_file_name = 'schedule.png'
+
+        gantt = Vis(data=schedule_as_dict(output), from_file=True)
+        gantt.plot_schedule(save_file_name)
+        logging.info(f'Save picture to ./img/{save_file_name}')
+
 
 

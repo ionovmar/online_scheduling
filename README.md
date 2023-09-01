@@ -22,28 +22,50 @@ You can choose one of these cases:
 ![Screenshot](cases.png)
 
 ### Run simulation
-The application will open online graph and in the ordterminal will show the status of agents.
+Run online visualisation of simulation in web browser:
 ```
-python main.py [case]
+simstreamlit run main.py [case]
 ```
 positional arguments: <br />
   case - 1, 2, 3, 4, 5, 6
-
-options:: <br />
-*-h, --help* show this help message and exit
-*--only_schedule* create scheduling without running simulation
-*--animation* create a video after simulation
-
-### Replay graph offline
-After running simulation, you can view the Gantt Chart of initial and final schedule.
+Run offline simulation:
 ```
- python main_plot.py 
+python main.py [case] --offline
 ```
-positional arguments:<br />
-mode - Select the mode you want to render: sim_vis or plot_schedule
+after offline simulation, you can convert the simulation to video with the command:
+```
+python main_plot.py sim_vis
+```
 
-options: <br />
-*-h, --help* show this help message and exit
+
+### Create schedule
+Create only schedule. The schedule will be saved in a json file and as an image.
+```
+python main.py [case] --only_schedule
+```
+The schedule will be saved in a json file and as an image.
+positional arguments: <br />
+  case - 1, 2, 3, 4, 5, 6
+
+
+[//]: # (### Replay graph offline)
+
+[//]: # (After running simulation, you can view the Gantt Chart of initial and final schedule.)
+
+[//]: # (```)
+
+[//]: # ( python main_plot.py )
+
+[//]: # (```)
+
+[//]: # (positional arguments:<br />)
+
+[//]: # (mode - Select the mode you want to render: sim_vis or plot_schedule)
+
+[//]: # ()
+[//]: # (options: <br />)
+
+[//]: # (*-h, --help* show this help message and exit)
 ## Change settings
 
 `sim/config.json`

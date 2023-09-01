@@ -4,7 +4,11 @@
     @author: Marina Ionova, student of Cybernetics and Robotics at the CTU in Prague
     @contact: marina.ionova@cvut.cz
 """
-from visualization import Vis, initial_and_final_schedule
+import threading
+
+import pandas as pd
+
+from visualization import Vis, initial_and_final_schedule, Web_vis
 from scheduling import Schedule, print_schedule
 from control.agents import Agent
 from control.jobs import Job
@@ -34,7 +38,8 @@ class ControlLogic:
         self.job = Job(self.case)
         self.set_schedule()
 
-        self.plot = Vis(horizon=self.schedule_model.horizon)
+        # self.plot = Vis(horizon=self.schedule_model.horizon)
+        self.plot = None
 
     def set_schedule(self):
         """
@@ -83,6 +88,8 @@ class ControlLogic:
                             self.change_agent(coworker_task[1], coworker)
                             agent.execute_task(coworker_task[1], self.job, self.current_time)
                             self.update_tasks_status()
+                            if self.plot:
+                                self.plot.update_info(agent, start=True)
                             return True
                         else:
                             agent.rejection_tasks.append(coworker_task[1].id)
@@ -154,25 +161,52 @@ class ControlLogic:
         self.job.refresh_completed_task_list(agent.current_task.id)
         logging.info(
             f'TIME {self.current_time}. {agent.name} completed the task {agent.current_task.id}. Progress {self.job.progress()}.')
+        if self.plot:
+            self.plot.update_info(agent)
 
     def schedule_as_dict(self):
         """
         Returns the current schedule as a dictionary.
         """
-        output = {}
+        output = {
+            "Status": [],
+            "Start": [],
+            "End": [],
+            "Agent": [],
+            "ID": [],
+            "Conditions": [],
+            "Object": [],
+            "Place": []
+        }
         for agent in self.agents:
-            output[agent.name] = agent.tasks_as_dict()
+            for task in agent.tasks_as_dict():
+                output['Status'].append(task['Status'])
+                output['Start'].append(task['Start'])
+                output['ID'].append(task['ID'])
+                output['Conditions'].append(task['Conditions'])
+                output['Object'].append(task['Action']['Object'])
+                output['Place'].append(task['Action']['Place'])
+
+                if task['Universal']:
+                    output['Agent'].append(f'Assigned\n to {task["Agent"]}')
+                else:
+                    output['Agent'].append(task['Agent'])
+                if isinstance(task['Finish'], int):
+                    output['End'].append(task['Finish'])
+                else:
+                    output['End'].append(task['Finish'][0])
+
         return output
 
     def run(self, animation=False, online_plot=False):
         """
-        Runs the scheduling simulation.
+        Run the scheduling simulation.
         """
         schedule_data = [self.schedule_as_dict()]
         if animation:
             self.plot.delete_existing_file()
         if online_plot:
-            self.plot.init_online_plotting()
+            self.plot = Web_vis(data=self.schedule_as_dict())
 
         while True:
             if self.job.progress() == 100:
@@ -187,6 +221,8 @@ class ControlLogic:
                     else:
                         agent.execute_task(task, self.job, self.current_time)
                         self.update_tasks_status()
+                        if self.plot:
+                            self.plot.update_info(agent, start=True)
 
             self.current_time += 1
             self.shift_schedule()
@@ -194,7 +230,8 @@ class ControlLogic:
             if online_plot:
                 self.plot.current_time = self.current_time
                 self.plot.data = self.schedule_as_dict()
-                self.plot.online_plotting()
+                self.plot.update_gantt_chart()
+                self.plot.update_dependency_graph()
                 time.sleep(1)
 
             if animation:
@@ -203,7 +240,6 @@ class ControlLogic:
                     self.plot.current_time = self.current_time
                     self.plot.data = self.schedule_as_dict()
                     self.plot.save_data()
-                    # self.plot.plot_schedule()
 
 
         logging.info('__________FINAL SCHEDULE___________')
