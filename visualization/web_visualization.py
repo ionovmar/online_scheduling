@@ -3,8 +3,6 @@ import altair as alt
 import pandas as pd
 from graphviz import Digraph
 
-
-
 class Web_vis:
 
     def __init__(self, data=None):
